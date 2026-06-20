@@ -39,11 +39,20 @@ export function startApiServer(client: Client): void {
 
     // 4) Create the ticket.
     try {
-      const { channelId, invite } = await createTicket(client, parsed.data);
+      const result = await createTicket(client, parsed.data);
+      if (result.alreadyOpen) {
+        console.log(
+          `↩️ Doppelte Anfrage von ${parsed.data.username} (${parsed.data.discordId}) — Ticket existiert bereits.`,
+        );
+        return res.status(409).json({
+          error: "Du hast bereits eine offene Anfrage. Wir melden uns!",
+          alreadyOpen: true,
+        });
+      }
       console.log(
-        `🎫 Ticket erstellt (#${channelId}) für ${parsed.data.username} (${parsed.data.discordId})`,
+        `🎫 Ticket erstellt (#${result.channelId}) für ${parsed.data.username} (${parsed.data.discordId})`,
       );
-      return res.json({ ok: true, ticketChannelId: channelId, invite });
+      return res.json({ ok: true, ticketChannelId: result.channelId });
     } catch (err) {
       console.error("Ticket-Erstellung fehlgeschlagen:", err);
       return res.status(500).json({ error: "Ticket konnte nicht erstellt werden" });

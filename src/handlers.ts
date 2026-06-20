@@ -103,8 +103,18 @@ async function handleClose(
     });
     return;
   }
+  const channel = interaction.channel as TextChannel;
+  // Only the team may close — the customer (whose id is in the topic) cannot.
+  const customerId = channel.topic?.match(/uid:(\d+)/)?.[1];
+  if (customerId && interaction.user.id === customerId) {
+    await interaction.reply({
+      content: "Nur das Team kann dieses Ticket schließen.",
+      flags: EPHEMERAL,
+    });
+    return;
+  }
   await interaction.reply({ content: "🔒 Ticket wird geschlossen…" });
-  await closeTicket(interaction.channel as TextChannel, interaction.user.tag);
+  await closeTicket(channel, interaction.user.tag);
 }
 
 async function handleKick(interaction: ChatInputCommandInteraction): Promise<void> {

@@ -57,8 +57,22 @@ function requestEmbed(data: ProjectRequest, forCustomer: boolean): EmbedBuilder 
 export async function createTicket(
   client: Client,
   data: ProjectRequest,
-): Promise<{ channelId: string }> {
+): Promise<{ channelId: string; alreadyOpen?: boolean }> {
   const guild = await client.guilds.fetch(config.guildId);
+
+  // 0) Enforce ONE open ticket per customer (anti-spam). A ticket carries the
+  //    customer id in its topic (uid:...), so we look for an existing one.
+  const channels = await guild.channels.fetch();
+  const existing = channels.find(
+    (c): c is TextChannel =>
+      !!c &&
+      c.type === ChannelType.GuildText &&
+      c.name.startsWith("ticket-") &&
+      (c.topic?.includes(`uid:${data.discordId}`) ?? false),
+  );
+  if (existing) {
+    return { channelId: existing.id, alreadyOpen: true };
+  }
 
   // 1) Add the customer to the server (needed so we can DM + later grant access).
   if (data.accessToken) {
