@@ -8,8 +8,14 @@ import {
   type Client,
   type Interaction,
 } from "discord.js";
-import { config } from "./config";
 import { closeTicket } from "./tickets";
+import {
+  effectiveLogChannelId,
+  effectiveStaffRoleId,
+  effectiveTicketCategoryId,
+  getStoredSettings,
+  setSetting,
+} from "./settings";
 
 const EPHEMERAL = MessageFlags.Ephemeral;
 
@@ -46,6 +52,9 @@ async function handleCommand(interaction: ChatInputCommandInteraction): Promise<
           "**🛡️ Moderation**",
           "`/kick` `/ban` `/timeout` `/clear` `/warn`",
           "",
+          "**⚙️ Konfiguration** (Admin)",
+          "`/config view` · `/config category` · `/config staffrole` · `/config logchannel`",
+          "",
           "**ℹ️ Sonstiges**",
           "`/ping` `/help`",
         ].join("\n"),
@@ -69,6 +78,9 @@ async function handleCommand(interaction: ChatInputCommandInteraction): Promise<
       return;
     case "warn":
       await handleWarn(interaction);
+      return;
+    case "config":
+      await handleConfig(interaction);
       return;
   }
 }
@@ -174,8 +186,9 @@ async function handleWarn(interaction: ChatInputCommandInteraction): Promise<voi
   await user
     .send(`⚠️ Du wurdest auf **${interaction.guild.name}** verwarnt.\nGrund: ${reason}`)
     .catch(() => {});
-  if (config.logChannelId) {
-    const log = await interaction.client.channels.fetch(config.logChannelId).catch(() => null);
+  const logChannelId = effectiveLogChannelId();
+  if (logChannelId) {
+    const log = await interaction.client.channels.fetch(logChannelId).catch(() => null);
     if (log && log.isTextBased() && "send" in log) {
       await (log as TextChannel)
         .send(`⚠️ **${user.tag}** verwarnt von **${interaction.user.tag}** — ${reason}`)
@@ -190,6 +203,52 @@ async function notInGuild(interaction: ChatInputCommandInteraction): Promise<voi
     content: "Dieser Befehl ist nur auf einem Server nutzbar.",
     flags: EPHEMERAL,
   });
+}
+
+async function handleConfig(interaction: ChatInputCommandInteraction): Promise<void> {
+  if (!interaction.inGuild()) return notInGuild(interaction);
+  const sub = interaction.options.getSubcommand();
+
+  if (sub === "view") {
+    const stored = getStoredSettings();
+    const channel = (id?: string) => (id ? `<#${id}>` : "— (nicht gesetzt)");
+    const role = (id?: string) => (id ? `<@&${id}>` : "— (nicht gesetzt)");
+    const src = (k: keyof typeof stored) => (stored[k] ? " *(per /config)*" : "");
+    await interaction.reply({
+      content: [
+        "**⚙️ Aktuelle Einstellungen**",
+        `Ticket-Kategorie: ${channel(effectiveTicketCategoryId())}${src("ticketCategoryId")}`,
+        `Staff-Rolle: ${role(effectiveStaffRoleId())}${src("staffRoleId")}`,
+        `Log-Kanal: ${channel(effectiveLogChannelId())}${src("logChannelId")}`,
+      ].join("\n"),
+      flags: EPHEMERAL,
+    });
+    return;
+  }
+
+  if (sub === "category") {
+    const ch = interaction.options.getChannel("kategorie", true);
+    await setSetting("ticketCategoryId", ch.id);
+    await interaction.reply({
+      content: `✅ Ticket-Kategorie gesetzt: **${ch.name}**`,
+      flags: EPHEMERAL,
+    });
+    return;
+  }
+
+  if (sub === "staffrole") {
+    const role = interaction.options.getRole("rolle", true);
+    await setSetting("staffRoleId", role.id);
+    await interaction.reply({ content: `✅ Staff-Rolle gesetzt: <@&${role.id}>`, flags: EPHEMERAL });
+    return;
+  }
+
+  if (sub === "logchannel") {
+    const ch = interaction.options.getChannel("kanal", true);
+    await setSetting("logChannelId", ch.id);
+    await interaction.reply({ content: `✅ Log-Kanal gesetzt: <#${ch.id}>`, flags: EPHEMERAL });
+    return;
+  }
 }
 
 async function handleButton(interaction: ButtonInteraction): Promise<void> {

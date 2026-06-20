@@ -1,4 +1,4 @@
-import { PermissionFlagsBits, REST, Routes, SlashCommandBuilder } from "discord.js";
+import { ChannelType, PermissionFlagsBits, REST, Routes, SlashCommandBuilder } from "discord.js";
 import { config } from "./config";
 
 /** Slash command definitions (JSON). */
@@ -50,6 +50,42 @@ export const commands = [
     .addUserOption((o) => o.setName("user").setDescription("Das Mitglied").setRequired(true))
     .addStringOption((o) => o.setName("grund").setDescription("Grund").setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+
+  new SlashCommandBuilder()
+    .setName("config")
+    .setDescription("Bot-Einstellungen: Ticket-Kategorie, Staff-Rolle, Log-Kanal.")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .addSubcommand((s) => s.setName("view").setDescription("Zeigt die aktuellen Einstellungen."))
+    .addSubcommand((s) =>
+      s
+        .setName("category")
+        .setDescription("Setzt die Kategorie für neue Ticket-Kanäle.")
+        .addChannelOption((o) =>
+          o
+            .setName("kategorie")
+            .setDescription("Die Kategorie")
+            .addChannelTypes(ChannelType.GuildCategory)
+            .setRequired(true),
+        ),
+    )
+    .addSubcommand((s) =>
+      s
+        .setName("staffrole")
+        .setDescription("Setzt die Staff-Rolle, die alle Tickets sieht.")
+        .addRoleOption((o) => o.setName("rolle").setDescription("Die Rolle").setRequired(true)),
+    )
+    .addSubcommand((s) =>
+      s
+        .setName("logchannel")
+        .setDescription("Setzt den Kanal für Ticket-Transcripts.")
+        .addChannelOption((o) =>
+          o
+            .setName("kanal")
+            .setDescription("Der Log-Kanal")
+            .addChannelTypes(ChannelType.GuildText)
+            .setRequired(true),
+        ),
+    ),
 ].map((c) => c.toJSON());
 
 /** Registers the slash commands for the configured guild (instant, no global wait). */

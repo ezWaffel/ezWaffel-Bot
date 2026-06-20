@@ -4,8 +4,10 @@ import { config } from "./config";
 import { registerCommands } from "./commands";
 import { registerHandlers } from "./handlers";
 import { startApiServer } from "./api";
+import { loadSettings } from "./settings";
 
 async function main(): Promise<void> {
+  await loadSettings();
   registerHandlers(client);
   // Start the API immediately so /health responds and the website always gets a
   // clean response, even if Discord is briefly unreachable.

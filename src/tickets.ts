@@ -11,6 +11,11 @@ import {
   type OverwriteResolvable,
 } from "discord.js";
 import { config } from "./config";
+import {
+  effectiveLogChannelId,
+  effectiveStaffRoleId,
+  effectiveTicketCategoryId,
+} from "./settings";
 import type { ProjectRequest } from "./types";
 
 const BRAND = 0xa855f7;
@@ -45,9 +50,10 @@ export async function createTicket(
       ],
     },
   ];
-  if (config.staffRoleId) {
+  const staffRoleId = effectiveStaffRoleId();
+  if (staffRoleId) {
     overwrites.push({
-      id: config.staffRoleId,
+      id: staffRoleId,
       allow: [
         PermissionFlagsBits.ViewChannel,
         PermissionFlagsBits.SendMessages,
@@ -60,7 +66,7 @@ export async function createTicket(
   const channel = await guild.channels.create({
     name: `ticket-${sanitize(data.username)}`,
     type: ChannelType.GuildText,
-    parent: config.ticketCategoryId,
+    parent: effectiveTicketCategoryId(),
     topic: `Projektanfrage von ${data.username} • Discord-ID ${data.discordId}`,
     permissionOverwrites: overwrites,
   });
@@ -114,7 +120,7 @@ export async function createTicket(
       .setStyle(ButtonStyle.Danger),
   );
 
-  const staffPing = config.staffRoleId ? `<@&${config.staffRoleId}> ` : "";
+  const staffPing = staffRoleId ? `<@&${staffRoleId}> ` : "";
   await (channel as TextChannel).send({
     content: `${staffPing}Neues Ticket für <@${data.discordId}>`,
     embeds: [embed],
@@ -155,9 +161,10 @@ export async function closeTicket(channel: TextChannel, closedBy: string): Promi
     /* couldn't read history */
   }
 
-  if (config.logChannelId) {
+  const logChannelId = effectiveLogChannelId();
+  if (logChannelId) {
     const logChannel = await channel.client.channels
-      .fetch(config.logChannelId)
+      .fetch(logChannelId)
       .catch(() => null);
     if (logChannel && logChannel.isTextBased() && "send" in logChannel) {
       await (logChannel as TextChannel)
