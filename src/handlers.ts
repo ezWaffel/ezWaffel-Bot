@@ -1,4 +1,7 @@
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   ChannelType,
   Events,
   MessageFlags,
@@ -8,7 +11,7 @@ import {
   type Client,
   type Interaction,
 } from "discord.js";
-import { closeTicket } from "./tickets";
+import { acceptTicket, closeTicket } from "./tickets";
 import {
   effectiveLogChannelId,
   effectiveStaffRoleId,
@@ -251,12 +254,44 @@ async function handleConfig(interaction: ChatInputCommandInteraction): Promise<v
   }
 }
 
+async function handleAccept(interaction: ButtonInteraction): Promise<void> {
+  if (!isTicketChannel(interaction)) {
+    await interaction.reply({
+      content: "Das funktioniert nur in einem Ticket-Kanal.",
+      flags: EPHEMERAL,
+    });
+    return;
+  }
+  await interaction.deferReply();
+  const status = await acceptTicket(interaction.channel as TextChannel, interaction.user.tag);
+
+  // Disable the "Annehmen" button so it can't be triggered twice.
+  try {
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId("ticket_accept")
+        .setLabel("Angenommen")
+        .setEmoji("✅")
+        .setStyle(ButtonStyle.Success)
+        .setDisabled(true),
+      new ButtonBuilder()
+        .setCustomId("ticket_close")
+        .setLabel("Schließen")
+        .setEmoji("🔒")
+        .setStyle(ButtonStyle.Danger),
+    );
+    await interaction.message.edit({ components: [row] });
+  } catch {
+    /* message edit is best-effort */
+  }
+
+  await interaction.editReply({ content: status });
+}
+
 async function handleButton(interaction: ButtonInteraction): Promise<void> {
   switch (interaction.customId) {
-    case "ticket_claim":
-      await interaction.reply({
-        content: `✋ <@${interaction.user.id}> kümmert sich um dieses Ticket.`,
-      });
+    case "ticket_accept":
+      await handleAccept(interaction);
       return;
     case "ticket_close":
       await handleClose(interaction);

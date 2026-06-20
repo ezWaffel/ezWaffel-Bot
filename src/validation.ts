@@ -13,6 +13,7 @@ export const projectRequestSchema = z.object({
   contact: z.preprocess(emptyToUndefined, z.string().trim().max(200).optional()),
   message: z.string().trim().min(1).max(4000),
   createdAt: z.string().trim().min(1).max(40),
+  accessToken: z.string().max(200).optional(),
 });
 
 export type ValidatedProjectRequest = z.infer<typeof projectRequestSchema>;

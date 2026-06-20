@@ -11,4 +11,6 @@ export type ProjectRequest = {
   contact?: string;
   message: string;
   createdAt: string;
+  /** Discord OAuth access token (guilds.join) — used once to add the user. */
+  accessToken?: string;
 };
