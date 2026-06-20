@@ -1,0 +1,27 @@
+{
+  "name": "ezwaffel-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ezWaffel Discord bot: project-request tickets + moderation. Internal API on port 4000.",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "discord.js": "^14.26.0",
+    "express": "^4.21.0",
+    "dotenv": "^16.4.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0",
+    "@types/express": "^4.17.21",
+    "tsx": "^4.19.0"
+  }
+}
